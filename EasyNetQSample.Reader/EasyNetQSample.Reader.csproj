@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>dotnet-EasyNetQ.Reader-59713131-619E-40D7-B837-97EE77A3DFD5</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EasyNetQSample.Bus\EasyNetQSample.Bus.csproj" />
+    <ProjectReference Include="..\EasyNetQSample.Command\EasyNetQSample.Command.csproj" />
+  </ItemGroup>
+</Project>
