@@ -49,13 +49,19 @@ namespace EasyNetQSample.Sender
             try
             {
                 var commands = serviceProvider.GetService<ICommandDispatcher>();
+                var eventDispatcher = serviceProvider.GetService<IEventDispatcher>();
                 while (true)
                 {
 
-                    Console.WriteLine("s: send , q: quit");
+                    Console.WriteLine("s: send , q: quit , p: publish");
                     var sendOrder = Console.ReadLine();
                     if (!string.IsNullOrWhiteSpace(sendOrder) && sendOrder.ToLower() == "s")
                         Task.Run(async () => await commands.Send(new AddPackageManuallyCommand
+                        {
+                            Id = Guid.NewGuid()
+                        }));
+                    else if (!string.IsNullOrWhiteSpace(sendOrder) && sendOrder.ToLower() == "p")
+                        Task.Run(async () => await eventDispatcher.Publish(new AddPackageManuallyEvent
                         {
                             Id = Guid.NewGuid()
                         }));
