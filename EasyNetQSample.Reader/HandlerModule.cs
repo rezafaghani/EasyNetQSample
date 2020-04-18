@@ -9,7 +9,9 @@ namespace EasyNetQSample.Reader
         {
             // Command Handlers
             builder.RegisterAssemblyTypes(GetType().Assembly)
-                .AsClosedTypesOf(typeof(ICommandHandler<>)).AsImplementedInterfaces();
+                .AsClosedTypesOf(typeof(ICommandHandler<,>)).AsImplementedInterfaces();
+            builder.RegisterAssemblyTypes(GetType().Assembly)
+               .AsClosedTypesOf(typeof(IEventHandler<>)).AsImplementedInterfaces();
         }
     }
 }

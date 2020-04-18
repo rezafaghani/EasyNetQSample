@@ -1,11 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace EasyNetQSample.Bus
 {
-    // Based on http://web-matters.blogspot.com.au/2014/08/cqrs-with-aspnet-mvc-entity-framework.html
-
     public interface IMessage
     {
+
     }
     public interface IEvent : IMessage
     {
@@ -29,16 +29,17 @@ namespace EasyNetQSample.Bus
 
     }
 
-    public interface ICommandHandler<in T> : IHandler
-        where T : ICommand
+    public interface ICommandHandler<in TRequest, TResponse> : IHandler
+        where TRequest : ICommand
+
     {
-        Task Execute(T command);
+        Task<TResponse> Handle(TRequest command, CancellationToken cancellationToken);
     }
 
-    public interface IEventHandler<in T> : IHandler
-        where T : IEvent
+    public interface IEventHandler<in TRequest> : IHandler
+        where TRequest : IEvent
     {
-        Task Handle(T evnt);
+        Task Handle(TRequest evnt, CancellationToken cancellationToken);
     }
 
     // Interface for query handlers - has two type parameters for the query and the query result
@@ -46,6 +47,6 @@ namespace EasyNetQSample.Bus
        where TResult : IQueryResult
        where TQuery : IQuery
     {
-        Task<TResult> Execute(TQuery query);
+        Task<TResult> Handle(TQuery query, CancellationToken cancellationToken);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Newtonsoft.Json;
@@ -11,17 +12,17 @@ namespace EasyNetQSample.Bus
 {
     public interface ICommandExecutor
     {
-        Task ExecuteCommand<T>(T command) where T : ICommand;
+        Task<TResponse> ExecuteCommand<TRequest, TResponse>(TRequest command, CancellationToken cancellationToken) where TRequest : ICommand;
     }
 
     public interface IEventExecutor
     {
-        Task ExecuteEvent<T>(T evnt) where T : IEvent;
+        Task ExecuteEvent<TRequest, TResponse>(TRequest evnt, CancellationToken cancellationToken) where TRequest : IEvent;
     }
 
     public interface IQueryExecutor
     {
-        Task<TResult> ExecuteQuery<TQuery, TResult>(TQuery query)
+        Task<TResult> ExecuteQuery<TQuery, TResult>(TQuery query, CancellationToken cancellationToken)
             where TQuery : IQuery
             where TResult : IQueryResult;
     }
@@ -39,25 +40,24 @@ namespace EasyNetQSample.Bus
             _resolver = resolver;
             _log = log;
         }
-
-        public async Task ExecuteCommand<T>(T command) where T : ICommand
+        public async Task<TResponse> ExecuteCommand<TRequest, TResponse>(TRequest command, CancellationToken cancellationToken) where TRequest : ICommand
         {
             AnnounceExecuting(command);
-
-            if (!_resolver.IsRegistered<ICommandHandler<T>>())
+            TResponse response;
+            if (!_resolver.IsRegistered<ICommandHandler<TRequest, TResponse>>())
             {
                 AnnounceNoHandlerFound(command);
                 throw new Exception($"No handler could be found for {command.GetType().Name}");
             }
 
-            var handler = _resolver.Resolve<ICommandHandler<T>>();
+            var handler = _resolver.Resolve<ICommandHandler<TRequest, TResponse>>();
 
             AnnounceHandlerFound(command, handler);
 
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                await handler.Execute(command);
+                response = await handler.Handle(command, cancellationToken);
             }
             catch (Exception e)
             {
@@ -67,9 +67,11 @@ namespace EasyNetQSample.Bus
             stopwatch.Stop();
 
             AnnounceExecuted(command, handler, stopwatch.ElapsedMilliseconds);
+            return response;
         }
 
-        public async Task<TResult> ExecuteQuery<TQuery, TResult>(TQuery query)
+
+        public async Task<TResult> ExecuteQuery<TQuery, TResult>(TQuery query, CancellationToken cancellationToken)
             where TQuery : IQuery
             where TResult : IQueryResult
         {
@@ -89,7 +91,7 @@ namespace EasyNetQSample.Bus
             TResult result;
             try
             {
-                result = await handler.Execute(query);
+                result = await handler.Handle(query, cancellationToken);
             }
             catch (Exception e)
             {
@@ -105,18 +107,16 @@ namespace EasyNetQSample.Bus
 
             return result;
         }
-
-        public async Task ExecuteEvent<T>(T evnt) where T : IEvent
+        public async Task ExecuteEvent<TRequest, TResponse>(TRequest evnt, CancellationToken cancellationToken) where TRequest : IEvent
         {
             AnnounceExecuting(evnt);
-
-            if (!_resolver.IsRegistered<IEventHandler<T>>())
+            if (!_resolver.IsRegistered<IEventHandler<TRequest>>())
             {
                 AnnounceNoHandlerFound(evnt);
-                return;
+                throw new Exception($"No handler could be found for {evnt.GetType().Name}");
             }
 
-            var handlers = _resolver.Resolve<IEnumerable<IEventHandler<T>>>();
+            var handlers = _resolver.Resolve<IEnumerable<IEventHandler<TRequest>>>();
             foreach (var handler in handlers)
             {
                 AnnounceHandlerFound(evnt, handler);
@@ -124,7 +124,7 @@ namespace EasyNetQSample.Bus
                 var stopwatch = Stopwatch.StartNew();
                 try
                 {
-                    await handler.Handle(evnt);
+                    await handler.Handle(evnt, cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -134,7 +134,9 @@ namespace EasyNetQSample.Bus
                 stopwatch.Stop();
 
                 AnnounceExecuted(evnt, handler, stopwatch.ElapsedMilliseconds);
+
             }
+
         }
 
         public void AnnounceExecuting(IMessage message)
@@ -179,5 +181,7 @@ namespace EasyNetQSample.Bus
             var messageName = message.GetType().Name;
             _log.Error($"No handler could be foud for {messageName}.");
         }
+
+
     }
 }

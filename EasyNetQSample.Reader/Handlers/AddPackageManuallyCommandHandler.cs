@@ -9,7 +9,7 @@ using Serilog;
 namespace EasyNetQSample.Reader.Handlers
 {
     public class AddPackageManuallyCommandHandler
-        :  IRequestHandler<AddPackageManuallyCommand, bool>, ICommandHandler<AddPackageManuallyCommand>
+        :  IRequestHandler<AddPackageManuallyCommand, bool>, ICommandHandler<AddPackageManuallyCommand,bool>
     {
 
         private readonly ILogger _logger;
@@ -20,14 +20,10 @@ namespace EasyNetQSample.Reader.Handlers
 
         public async Task<bool> Handle(AddPackageManuallyCommand request, CancellationToken cancellationToken)
         {
-            
+            _logger.Information("Worker running at: {time}", DateTimeOffset.Now);
             return true;
         }
 
-        public async Task Execute(AddPackageManuallyCommand command)
-        {
-            _logger.Information("Worker running at: {time}", DateTimeOffset.Now);
-            //throw new NotImplementedException();
-        }
+       
     }
 }
