@@ -13,7 +13,7 @@ namespace EasyNetQSample.Bus
         public AckStrategy HandleConsumerError(ConsumerExecutionContext context, Exception exception)
         {
             //FileNotFoundException
-            if (exception.GetType().Equals(typeof(FileNotFoundException)))
+            if (exception.GetType() == typeof(FileNotFoundException))
             {
                 return AckStrategies.NackWithoutRequeue;
             }
